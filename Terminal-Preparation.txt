@@ -130,6 +130,19 @@ cat ishu.txt
 
 ################################################################
 
+HTTP
+
+ip a
+mkdir httpfile
+cd httpfile
+touch http.txt
+echo "hello from vm1">http.txt
+python3 -m http.server 8080
+-vm2
+wget http://192.168.1.8:8080/http.txt
+ls
+
+################################################################
 
 KVM INSTALLATION
 Machine has to be in NAT
@@ -257,6 +270,7 @@ Set-VMDvdDrive -VMName "tcevm" -Path "C:\ubuntu-18.04-desktop-amd64.iso"
 
 
 Get-VM
+
 
 
 stop-VM -Name "tcevm"
