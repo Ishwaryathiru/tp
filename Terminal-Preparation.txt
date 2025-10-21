@@ -1,0 +1,262 @@
+﻿VM-VM Ping
+Both vm network : bridged 
+Kali
+ip a
+
+
+Ubuntu
+ifconfig
+ping kali_ip
+
+
+Kali
+ping ubuntu_ip
+
+
+################################################################
+
+
+VM-Native Ping    (VM-Host ping)
+Set vm to host only adapter in network (Network setting)
+
+
+Windows (Native or Host)
+ipconfig
+
+
+Ubuntu
+ifconfig
+ping window_ip
+
+
+Windows
+ping ubuntu_ip
+
+
+################################################################
+
+
+Cold migration    (OVA)
+1. Create a vm
+2. create a file using nano
+3. power off the vm
+4. File (Top Left)
+5. export appliance
+6. Choose path and set OVA file name
+7. Finish
+
+
+################################################################
+
+
+Critix Live Migration
+1. Open critix
+2. Add new server
+3. Ip, root, pw -> Add
+4. Expand to Xenserver-1
+5. Right click -> new vm
+6. Create vm by giving next
+7. Add new server   [Has to be performed only if 2 servers are not seen]
+8. Ip, pw, root -> add
+9. Expand to Xenserver-2
+10. Right click on the newly created vm in xenserver-1 [If seen skip here]
+11. Move vm -> xenserver-2
+
+
+################################################################
+
+
+Shared Folder
+1. Vm settings -> shared folder (Choose the folder path form host)
+2.  Start vm
+3. Devices -> Insert guest addition cd
+4. Click run
+5. Done
+
+
+################################################################
+
+
+NFS File share
+Both machine should be in bridged (Network settings)
+Kali
+sudo apt update
+sudo apt install nfs-kernel-server
+sudo mkdir /mnt/shared
+cd /mnt/shared
+nano ishu.txt
+sudo chown nobody:nogroup /mnt/shared
+sudo nano /etc/exports
+
+
+Cpy & paste
+/mnt/shared ubuntu_ip(rw,sync,no_subtree_check)   (ifconfig in ubuntu)
+Ctrl+x
+
+sudo systemctl restart nfs-kernel-server
+
+
+Ubuntu
+sudo apt update
+sudo install nfs-common
+sudo -i
+mkdir /mnt/shared
+sudo mount kali_ip:/mnt/shared /mnt/shared   (ip a in kali)
+
+
+cd mnt/shared
+ls -> u shld be able to see the files 
+
+
+################################################################
+
+
+SSH
+Kali
+sudo apt update 
+sudo apt install openssh-server
+sudo systemctl enable --now ssh
+
+
+Ubuntu
+sftp kali@kali_ip      (ip a)
+put Desktop/ishu.txt
+
+
+Kali
+ls
+cat ishu.txt
+
+
+################################################################
+
+
+KVM INSTALLATION
+Machine has to be in NAT
+
+
+egrep -c 'vmx' /proc/cpuinfo
+egrep -c 'svm' /proc/cpuinfo
+egrep -c 'lm' /proc/cpuinfo
+uname -a
+sudo apt-get install qemu-kvm
+sudo apt-get install libvirt-bin
+sudo apt-get install bridge-utils qemu-system virt-manager
+sudo nano /etc/libvirt/libvirtd.conf
+Copy paste
+listen_addr = "0.0.0.0"
+unix_sock_group = "libvirt"
+unix_sock_ro_perms = "0777"
+unix_sock_rw_perms = "0777"
+unix_sock_dir = "/var/run/libvirt"
+auth_unix_ro = "none"
+auth_unix_rw = "none"
+
+
+
+
+virsh list
+virsh
+
+
+sudo systemctl status libvirtd
+sudo usermod -aG libvirt $USER
+sudo reboot
+groups
+
+
+Search virtual machine manager
+Connect download proceed
+
+
+Right click on qemu -> new
+Download ubuntu 16.04 
+Frwd
+Storage -> manage (qemu-img create -f qcow2 ubuntu_vm.qcow2 10G)
+
+
+
+KVM - Create image from ISO, Image resizing and Image creation
+qemu-img create -f qcow2 ubuntu_vm.qcow2 10G
+qemu-img resize ubuntu_vm.qcow2 +10G
+qemu-img convert -O vdi ubuntu_vm.qcow2 ubuntu_vm.vdi -p
+
+
+################################################################
+
+
+Bridge Utils (Network virtualization)
+Machine network : NAT
+sudo apt update
+sudo apt install bridge-utils
+sudo -i
+brctl addbr br-cloud
+brctl addif br-cloud enp0s3    (ifconfig la u can see)
+ifconfig enp0s3 0
+ifconfig br-cloud 10.0.2.15 netmask 255.255.255.0 (ifconfig la 1st line)
+route add default gw 10.0.2.15  dev br-cloud
+route -n
+brctl show
+
+
+
+
+################################################################
+
+
+OpenVswitch (Network Virtualization)
+Machine network : NAT
+sudo apt update
+sudo apt install openvswitch-switch
+sudo systemctl start openvswitch-switch
+sudo systemctl enable openvswitch-switch
+sudo ovs-vsctl add-br ovs-br0x
+sudo ovs-vsctl add-port ovs-br0x enp0s3 
+sudo ovs-vsctl show
+
+
+################################################################
+
+
+Creation of vm using hyperV
+
+
+1. Search “turn windows feature on or off”
+2. Select hyper-V -> ok
+3. Restart
+4. In powershell -> Enable-windowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+5. Search “hyper V Manager” -> Open it
+6. Action -> New -> Virtual machine
+7. Assign name -> Generation 2 -> Dynamic memory enabled -> Choose vhd available -> finish
+8. In actions (right panel) u will be able to see the created vm
+9. Exapnd the created vm -> connect
+
+
+In powershell
+Get-VM
+
+
+################################################################
+
+
+Creation of vm in powershell (Windows)
+
+
+New-VM -Name "tcevm" -MemoryStartupBytes 2GB -NewVHDPath "D:\tcevm.vhdx" - NewVHDSizeBytes 60GB -Path "D:\"
+
+
+Get-VM
+
+
+Connect-VMNetworkAdapter -VMName "tcevm" -SwitchName "Intel(R) Ethernet Connection (2) I219-LM - Virtual Swich"
+
+
+Set-VMDvdDrive -VMName "tcevm" -Path "C:\ubuntu-18.04-desktop-amd64.iso"
+
+
+
+
+Get-VM
+
+
+stop-VM -Name "tcevm"
